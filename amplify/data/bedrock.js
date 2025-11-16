@@ -21,7 +21,7 @@ export function request(ctx) {
               content: [
                 {
                   type: "text",
-                  text: `\n\nHuman: ${prompt}\n\nAssistant:`,
+                  text: prompt,
                 },
               ],
             },
@@ -34,6 +34,22 @@ export function request(ctx) {
   export function response(ctx) {
     // Parse the response body
     const parsedBody = JSON.parse(ctx.result.body);
+    
+    // Check if response has the expected structure
+    if (!parsedBody.content || !Array.isArray(parsedBody.content) || parsedBody.content.length === 0) {
+      // If error response, return it
+      if (parsedBody.error || parsedBody.message) {
+        return {
+          error: parsedBody.error?.message || parsedBody.message || "Bedrock API error",
+        };
+      }
+      // Log unexpected structure for debugging
+      console.error("Unexpected Bedrock response:", JSON.stringify(parsedBody, null, 2));
+      return {
+        error: "Unexpected response structure from Bedrock API",
+      };
+    }
+    
     // Extract the text content from the response
     const res = {
       body: parsedBody.content[0].text,
